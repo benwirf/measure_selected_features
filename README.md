@@ -1,1 +1,1 @@
-# qgis-Sum_Selected_Line_Lengths
+# qgis-Measure_Selected_Features
