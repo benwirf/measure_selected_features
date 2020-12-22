@@ -1,0 +1,13 @@
+[general]
+name=Measure Selected Features
+qgisMinimumVersion=3.0
+description=Sums lengths or areas of selected features
+version=0.1
+author=Ben Wirf
+email=ben.wirf@hotmail.com
+about=Displays sum of selected features length or area in a dock widget
+tracker=http://bugs
+repository=http://repo
+icon=msf_icon.png
+experimental=True
+deprecated=False
