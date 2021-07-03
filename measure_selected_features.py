@@ -1,16 +1,16 @@
 """
 /****************************************************************************************
-Copyright:  (C) Ben Wirf
-Date:       April 2020
-Email:      ben.wirf@gmail.com
-****************************************************************************************/
+ *   Copyright:  (C) Ben Wirf
+ *   Date:       April 2020 (updated June 2021)
+ *   Email:      ben.wirf@gmail.com
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ ***************************************************************************/
 """
-#TODO: Problems arise with closing the dockwidget if all layers in a project have been
-#removed (C++ object QgsVectorLayer has been deleted). Try declaring self.project as a
-#class attribute (initialize to None) then when a project is loaded, set self.project to it.
-#listen for a signal (something like layerRemoved) and connect to a slot which checks
-#the number of layers in the project layer registry and if it is zero, set self.layer to none.
-#or do something else to avoide the error (which comes from the tool_reset() method)
 
 import os
 from qgis.core import QgsVectorLayer, QgsRasterLayer, QgsDistanceArea, QgsUnitTypes, QgsProject
@@ -119,6 +119,9 @@ class MeasureSelectedFeatures:
         if top_level is True:
             self.set_gui_geometry()
             
+    def set_gui_geometry(self):
+        self.dlg.setGeometry(750, 300, 750, 50)
+
             
     def action_triggered(self):
         self.window.addDockWidget(Qt.TopDockWidgetArea, self.dlg)
