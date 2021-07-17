@@ -232,14 +232,16 @@ class MeasureSelectedFeatures:
     
     def radios_toggled(self):
         if self.iface.activeLayer().geometryType() == 1: # lines
-            if self.dlg.rad_2.isChecked():
+            if self.dlg.rad_2.isChecked(): # planimetric
                 if self.dlg.cb_units.currentText() == 'degrees':
+                    # reload combobox items without degree option
                     self.dlg.cb_units.clear()
                     self.dlg.cb_units.addItems(self.cb_linear_items)
                     self.dlg.cb_units.removeItem(self.cb_linear_items.index('degrees'))
                 else:
+                    # just remove the degree option
                     self.dlg.cb_units.removeItem(self.cb_linear_items.index('degrees'))
-            elif self.dlg.rad_1.isChecked():
+            elif self.dlg.rad_1.isChecked(): # ellipsoidal
                 if self.dlg.cb_units.count() == 0:
                     self.dlg.cb_units.addItems(self.cb_linear_items)
                     if not self.dlg.cb_units.isEnabled():
@@ -288,7 +290,6 @@ class MeasureSelectedFeatures:
         layer = self.layer
 #        self.set_title()
         if isinstance(layer, QgsVectorLayer) and layer.isSpatial():
-#            print('A')
             #####04-06-21
             self.da.setSourceCrs(layer.crs(), QgsProject.instance().transformContext())
             self.da.setEllipsoid(layer.crs().ellipsoidAcronym())
@@ -304,12 +305,10 @@ class MeasureSelectedFeatures:
             
             l_units = layer.crs().mapUnits()
             if layer.geometryType() == 1:# Lines
-#                print('B')
                 self.dlg.setWindowTitle('Measuring {} selected features from layer: {} - {} ({})'.format(layer.selectedFeatureCount(),
                 layer.name(), epsg_code, crs_type))
                 self.dlg.lbl_1.setText('Total length of selected features: ')
                 if layer.crs().isGeographic() or (not layer.crs().isGeographic() and self.dlg.rad_1.isChecked()):
-#                    print('C')
                     total_geo_m = sum([self.geodetic_length(f) for f in select_fts])
                     if self.dlg.cb_units.currentText() == 'meters':
                         self.dlg.le_total.setText(str('{:.3f}m'.format(total_geo_m)))
@@ -339,40 +338,35 @@ class MeasureSelectedFeatures:
                         self.dlg.le_total.setText(str('{:.3f}mm'.format(total_geo_mm)))
                     
                 else: # projected CRS
-#                    print('D')
                     total_length_proj = sum([self.planar_length(f) for f in select_fts])
-                    if l_units == 0: # meters
-#                        print('E')
+                    if l_units != 6: # Units are NOT degrees
                         if self.dlg.cb_units.currentText() == 'meters':
-                            self.dlg.le_total.setText(str('{:.3f}m'.format(total_length_proj)))
+                            self.dlg.le_total.setText(str('{:.3f}m'.format(self.convert_planar_length(total_length_proj, l_units, 0))))
                         elif self.dlg.cb_units.currentText() == 'kilometers':
-                            self.dlg.le_total.setText(str('{:.3f}km'.format(total_length_proj/1000)))
+                            self.dlg.le_total.setText(str('{:.3f}km'.format(self.convert_planar_length(total_length_proj, l_units, 1))))
                         elif self.dlg.cb_units.currentText() == 'feet':
-                            self.dlg.le_total.setText(str('{:.3f}ft'.format(total_length_proj*3.28084)))
+                            self.dlg.le_total.setText(str('{:.3f}ft'.format(self.convert_planar_length(total_length_proj, l_units, 2))))
                         elif self.dlg.cb_units.currentText() == 'nautical miles':
-                            self.dlg.le_total.setText(str('{:.3f}NM'.format(total_length_proj/1852)))
+                            self.dlg.le_total.setText(str('{:.3f}NM'.format(self.convert_planar_length(total_length_proj, l_units, 3))))
                         elif self.dlg.cb_units.currentText() == 'yards':
-                            self.dlg.le_total.setText(str('{:.3f}yd'.format(total_length_proj*1.09361)))
+                            self.dlg.le_total.setText(str('{:.3f}yd'.format(self.convert_planar_length(total_length_proj, l_units, 4))))
                         elif self.dlg.cb_units.currentText() == 'miles':
-                            self.dlg.le_total.setText(str('{:.3f}mi'.format(total_length_proj/1609.34)))
+                            self.dlg.le_total.setText(str('{:.3f}mi'.format(self.convert_planar_length(total_length_proj, l_units, 5))))
                         elif self.dlg.cb_units.currentText() == 'centimeters':
-                            self.dlg.le_total.setText(str('{:.3f}cm'.format(total_length_proj*100)))
+                            self.dlg.le_total.setText(str('{:.3f}cm'.format(self.convert_planar_length(total_length_proj, l_units, 7))))
                         elif self.dlg.cb_units.currentText() == 'millimeters':
-                            self.dlg.le_total.setText(str('{:.3f}mm'.format(total_length_proj*1000)))
-                    else: # not meter units
-#                        print('F')
+                            self.dlg.le_total.setText(str('{:.3f}mm'.format(self.convert_planar_length(total_length_proj, l_units, 8))))
+                    else: # degree units
                         self.dlg.cb_units.clear()
                         self.dlg.cb_units.setEnabled(False)
                         self.dlg.le_total.setText(str('{:.3f}{}'.format(total_length_proj, self.Distance_Units[l_units])))
                         
                         
             elif layer.geometryType() == 2:# Polygons
-#                print('G')
                 self.dlg.setWindowTitle('Measuring {} selected features from layer: {} - {} ({})'.format(layer.selectedFeatureCount(),
                 layer.name(), epsg_code, crs_type))
                 self.dlg.lbl_1.setText('Total area of selected features: ')
                 if layer.crs().isGeographic() or (not layer.crs().isGeographic() and self.dlg.rad_1.isChecked()):
-#                    print('H')
                     total_geo_m = sum([self.geodetic_area(f) for f in select_fts])
                     if self.dlg.cb_units.currentText() == 'square meters':
                         self.dlg.le_total.setText(str('{:.3f}m2'.format(total_geo_m)))
@@ -408,39 +402,375 @@ class MeasureSelectedFeatures:
                         self.dlg.le_total.setText(str('{:.3f}mm2'.format(total_geo_mm)))
                     
                 else: # projected CRS
-#                    print('I')
-                    total_length_proj = sum([self.planar_area(f) for f in select_fts])
-                    if l_units == 0: # meters
-#                        print('J')
+                    total_area_proj = sum([self.planar_area(f) for f in select_fts])
+                    if l_units != 6: # Units are NOT degrees
                         if self.dlg.cb_units.currentText() == 'square meters':
-                            self.dlg.le_total.setText(str('{:.3f}m2'.format(total_length_proj)))
+                            self.dlg.le_total.setText(str('{:.3f}m2'.format(self.convert_planar_area(total_area_proj, l_units, 'square meters'))))
                         elif self.dlg.cb_units.currentText() == 'square kilometers':
-                            self.dlg.le_total.setText(str('{:.3f}km2'.format(total_length_proj/1000000)))
+                            self.dlg.le_total.setText(str('{:.3f}km2'.format(self.convert_planar_area(total_area_proj, l_units, 'square kilometers'))))
                         elif self.dlg.cb_units.currentText() == 'square feet':
-                            self.dlg.le_total.setText(str('{:.3f}ft2'.format(total_length_proj*10.7639)))
+                            self.dlg.le_total.setText(str('{:.3f}ft2'.format(self.convert_planar_area(total_area_proj, l_units, 'square feet'))))
                         elif self.dlg.cb_units.currentText() == 'square yards':
-                            self.dlg.le_total.setText(str('{:.3f}yd2'.format(total_length_proj*1.19599)))
+                            self.dlg.le_total.setText(str('{:.3f}yd2'.format(self.convert_planar_area(total_area_proj, l_units, 'square yards'))))
                         elif self.dlg.cb_units.currentText() == 'square miles':
-                            self.dlg.le_total.setText(str('{:.3f}mi2'.format(total_length_proj/2589988.11)))
+                            self.dlg.le_total.setText(str('{:.3f}mi2'.format(self.convert_planar_area(total_area_proj, l_units, 'square miles'))))
                         elif self.dlg.cb_units.currentText() == 'hectares':
-                            self.dlg.le_total.setText(str('{:.3f}ha'.format(total_length_proj/10000)))
+                            self.dlg.le_total.setText(str('{:.3f}ha'.format(self.convert_planar_area(total_area_proj, l_units, 'hectares'))))
                         elif self.dlg.cb_units.currentText() == 'acres':
-                            self.dlg.le_total.setText(str('{:.3f}ac'.format(total_length_proj/4047)))
+                            self.dlg.le_total.setText(str('{:.3f}ac'.format(self.convert_planar_area(total_area_proj, l_units, 'acres'))))
                         elif self.dlg.cb_units.currentText() == 'square nautical miles':
-                            self.dlg.le_total.setText(str('{:.3f}NM2'.format(total_length_proj/3429904)))
+                            self.dlg.le_total.setText(str('{:.3f}NM2'.format(self.convert_planar_area(total_area_proj, l_units, 'square nautical miles'))))
                         elif self.dlg.cb_units.currentText() == 'square centimeters':
-                            self.dlg.le_total.setText(str('{:.3f}cm2'.format(total_length_proj*10000)))
+                            self.dlg.le_total.setText(str('{:.3f}cm2'.format(self.convert_planar_area(total_area_proj, l_units, 'square centimeters'))))
                         elif self.dlg.cb_units.currentText() == 'square millimeters':
-                            self.dlg.le_total.setText(str('{:.3f}mm2'.format(total_length_proj*1000000)))
-                    else:
-#                        print('K')
+                            self.dlg.le_total.setText(str('{:.3f}mm2'.format(self.convert_planar_area(total_area_proj, l_units, 'square millimeters'))))
+                    else: # Degree units
                         self.dlg.cb_units.clear()
                         if self.dlg.cb_units.isEnabled():
                             self.dlg.cb_units.setEnabled(False)
-                        self.dlg.le_total.setText(str('{:.3f}{}2'.format(total_length_proj, self.Distance_Units[l_units])))
+                        self.dlg.le_total.setText(str('{:.3f}{}2'.format(total_area_proj, self.Distance_Units[l_units])))
                         
             if layer.geometryType() in [3, 4]:
                 self.iface.messageBar().pushMessage('Layer has unknown or Null geometry type', duration=2)
+
+###########################UNIT CONVERSIONS FOR PROJECTED CRS'S#####################################
+
+    def convert_planar_length(self, length, input_units, output_units):
+        if input_units == 0: # Meters
+            if output_units == 0: # Meters
+                result = length
+            elif output_units == 1: # Kilometers
+                result = length/1000
+            elif output_units == 2: # Imperial feet
+                result = length*3.28084
+            elif output_units == 3: # Nautical miles
+                result = length/1852
+            elif output_units == 4: # Imperial yards
+                result = length*1.09361
+            elif output_units == 5: # Terrestrial miles
+                result = length/1609.344
+            elif output_units == 7: # Centimeters
+                result = length*100
+            elif output_units == 8: # Millimeters
+                result = length*1000
+        elif input_units == 1: # Kilometers
+            if output_units == 0: # Meters
+                result = length*1000
+            elif output_units == 1: # Kilometers
+                result = length
+            elif output_units == 2: # Imperial feet
+                result = length*3280.84
+            elif output_units == 3: # Nautical miles
+                result = length/1.852
+            elif output_units == 4: # Imperial yards
+                result = length*1093.61
+            elif output_units == 5: # Terrestrial miles
+                result = length/1.609
+            elif output_units == 7: # Centimeters
+                result = length*100000
+            elif output_units == 8: # Millimeters
+                result = length*1000000
+        elif input_units == 2: # Imperial feet
+            if output_units == 0: # Meters
+                result = length/3.281
+            elif output_units == 1: # Kilometers
+                result = length/3281
+            elif output_units == 2: # Imperial feet
+                result = length
+            elif output_units == 3: # Nautical Miles
+                result = length/6076
+            elif output_units == 4: # Imperial yards
+                result = length/3
+            elif output_units == 5: # Terrestrial miles
+                result = length/5280
+            elif output_units == 7: # Centimeters
+                result = length*30.48
+            elif output_units == 8: # Millimeters
+                result = length*304.8
+        elif input_units == 3: # Nautical miles
+            if output_units == 0: # Meters
+                result = length*1852
+            if output_units == 1: # Kilometers
+                result = length*1.852
+            elif output_units == 2: # Imperial feet
+                result = length*6076
+            elif output_units == 3: # Nautical miles
+                result = length
+            elif output_units == 4: # Imperial yards
+                result = length*2025.37
+            elif output_units == 5: # Terrestrial miles
+                result = length*1.15078
+            elif output_units == 7: # Centimeters
+                result = length*185200
+            elif output_units == 8: # Millimeters
+                result = length*1852000
+        elif input_units == 4: # Imperial yards
+            if output_units == 0: # Meters
+                result = length/1.094
+            elif output_units == 1: # Kilometers
+                result = length/1094
+            elif output_units == 2: # Imperial feet
+                result = length*3
+            elif output_units == 3: # Nautical miles
+                result = length/2025
+            elif output_units == 4: # Imperial yards
+                result = length
+            elif output_units == 5: # Terrestrial miles
+                result = length/1760
+            elif output_units == 7: # Centimeters
+                result = length*91.44
+            elif output_units == 8: # Millimeters
+                result = length*914.4
+        elif input_units == 5: # Terrestrial miles
+            if output_units == 0: # Meters
+                result = length*1609.34
+            elif output_units == 1: # Kilometers
+                result = length*1.609
+            elif output_units == 2: # Imperial feet
+                result = length*5280
+            elif output_units == 3: # Nautical miles
+                result = length/1.151
+            elif output_units == 4: # Imperial yards
+                result = length*1760
+            elif output_units == 5: # Terrestrial miles
+                result = length
+            elif output_units == 7: # Centimeters
+                result = length*160934
+            elif output_units == 8: # Millimeters
+                result = length*1609340
+        elif input_units == 7: # Centimeters
+            if output_units == 0: # Meters
+                result = length/100
+            elif output_units == 1: # Kilometers
+                result = length/100000
+            elif output_units == 2: # Imperial feet
+                result = length/30.48
+            elif output_units == 3: # Nautical miles
+                result = length/185200
+            elif output_units == 4: # Imperial yards
+                result = length/91.44
+            elif output_units == 5: # Terrestrial miles
+                result = length/160934
+            elif output_units == 7: # Centimeters
+                result = length
+            elif output_units == 8: # Millimeters
+                result = length*10
+        elif input_units == 8: # Millimeters
+            if output_units == 0: # Meters
+                result = length/1000
+            elif output_units == 1: # Kilometers
+                result = length/1000000
+            elif output_units == 2: # Imperial feet
+                result = length/305
+            elif output_units == 3: # Nautical miles
+                result = length/1852000
+            elif output_units == 4: # Imperial yards
+                result = length/914
+            elif output_units == 5: # Terrestrial miles
+                result = length/1609000
+            elif output_units == 7: # Centimeters
+                result = length/10
+            elif output_units == 8: # Millimeters
+                result = length
+                
+        return result
+
+#####################################AREA UNITS#####################################################
+
+    def convert_planar_area(self, area, input_units, output_units):
+        if input_units == 0: # Meters
+            if output_units == 'square meters': # Square meters
+                result = area
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area/1000000
+            elif output_units == 'square feet': # Square feet
+                result = area*10.764
+            elif output_units == 'square yards': # Square yards
+                result = area*1.196
+            elif output_units == 'square miles': # Square miles
+                result = area/2589988.1
+            elif output_units == 'hectares': # Hectares
+                result = area/10000
+            elif output_units == 'acres': # Acres
+                result = area/4047
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/3429904
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area*10000
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*1000000
+
+    #--------------------------------------------------------------------
+
+        elif input_units == 1: # Kilometers
+            if output_units == 'square meters': # Square meters
+                result = area*10000
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area
+            elif output_units == 'square feet': # Square feet
+                result = area*10763910.417
+            elif output_units == 'square yards': # Square yards
+                result = area*1195990.05
+            elif output_units == 'square miles': # Square miles
+                result = area/2.59
+            elif output_units == 'hectares': # Hectares
+                result = area*100
+            elif output_units == 'acres': # Acres
+                result = area*247.105
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/3.43
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area*10000000000
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*1000000000000
+
+    #--------------------------------------------------------------------
+
+        elif input_units == 2: # Imperial feet
+            if output_units == 'square meters': # Square meters
+                result = area/10.764
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area/10763910.417
+            elif output_units == 'square feet': # Square feet
+                result = area
+            elif output_units == 'square yards': # Square yards
+                result = area/9
+            elif output_units == 'square miles': # Square miles
+                result = area/27878400
+            elif output_units == 'hectares': # Hectares
+                result = area/107639
+            elif output_units == 'acres': # Acres
+                result = area/43560
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/36920000
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area*929
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*92903
+
+    #--------------------------------------------------------------------
+
+        elif input_units == 3: # Nautical miles
+            if output_units == 'square meters': # Square meters
+                result = area*3430000
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area*3.43
+            elif output_units == 'square feet': # Square feet
+                result = area*36920000
+            elif output_units == 'square yards': # Square yards
+                result = area*4102000
+            elif output_units == 'square miles': # Square miles
+                result = area*1.324
+            elif output_units == 'hectares': # Hectares
+                result = area*343
+            elif output_units == 'acres': # Acres
+                result = area*847.548
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area*34300000000
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*3430000000000
+
+    #--------------------------------------------------------------------
+
+        elif input_units == 4: # Imperial yards
+            if output_units == 'square meters': # Square meters
+                result = area/1.196
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area/1196000
+            elif output_units == 'square feet': # Square feet
+                result = area*9
+            elif output_units == 'square yards': # Square yards
+                result = area
+            elif output_units == 'square miles': # Square miles
+                result = area/3098000
+            elif output_units == 'hectares': # Hectares
+                result = area/11960
+            elif output_units == 'acres': # Acres
+                result = area/4840
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/4102000
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area*8361
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*836127
+                
+    #--------------------------------------------------------------------
+
+        elif input_units == 5: # Terrestrial miles
+            if output_units == 'square meters': # Square meters
+                result = area*2590000
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area*2.59
+            elif output_units == 'square feet': # Square feet
+                result = area*27880000
+            elif output_units == 'square yards': # Square yards
+                result = area*3098000
+            elif output_units == 'square miles': # Square miles
+                result = area
+            elif output_units == 'hectares': # Hectares
+                result = area*259
+            elif output_units == 'acres': # Acres
+                result = length*640
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/1.324
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area*25900000000
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*2590000000000
+
+    #--------------------------------------------------------------------
+
+        elif input_units == 7: # Centimeters
+            if output_units == 'square meters': # Square meters
+                result = area/10000
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area/10000000000
+            elif output_units == 'square feet': # Square feet
+                result = area/929.03
+            elif output_units == 'square yards': # Square yards
+                result = area/8361.27
+            elif output_units == 'square miles': # Square miles
+                result = area/25899881103.36
+            elif output_units == 'hectares': # Hectares
+                result = area/100000000
+            elif output_units == 'acres': # Acres
+                result = area/40468564.224
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/34299040000
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area*100
+                
+    #--------------------------------------------------------------------
+
+        elif input_units == 8: # Millimeters
+            if output_units == 'square meters': # Square meters
+                result = area/1000000
+            elif output_units == 'square kilometers': # Square kilometers
+                result = area/1000000000000
+            elif output_units == 'square feet': # Square feet
+                result = area/92903
+            elif output_units == 'square yards': # Square yards
+                result = area/836127
+            elif output_units == 'square miles': # Square miles
+                result = area/2589988110336
+            elif output_units == 'hectares': # Hectares
+                result = area/10000000000
+            elif output_units == 'acres': # Acres
+                result = area/4046856422
+            elif output_units == 'square nautical miles': # Square Nautical miles
+                result = area/3429904000000
+            elif output_units == 'square centimeters': # Square centimeters
+                result = area/100
+            elif output_units == 'square millimeters': # Square millimeters
+                result = area
+
+        return result
+
+####################################################################################################
     
     def dockwidget_closed(self):
 #        print('dockwidget closed!!')
