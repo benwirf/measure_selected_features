@@ -329,7 +329,7 @@ class MeasureSelectedFeatures:
                         self.dlg.le_total.setText(str('{:.3f}mi'.format(total_geo_mi)))
                     elif self.dlg.cb_units.currentText() == 'degrees':
                         total_geo_deg = self.da.convertLengthMeasurement(total_geo_m, QgsUnitTypes.DistanceDegrees)
-                        self.dlg.le_total.setText(str('{:.3f}deg'.format(total_geo_deg)))
+                        self.dlg.le_total.setText(str('{:.6f}deg'.format(total_geo_deg)))
                     elif self.dlg.cb_units.currentText() == 'centimeters':
                         total_geo_cm = self.da.convertLengthMeasurement(total_geo_m, QgsUnitTypes.DistanceCentimeters)
                         self.dlg.le_total.setText(str('{:.3f}cm'.format(total_geo_cm)))
@@ -359,7 +359,7 @@ class MeasureSelectedFeatures:
                     else: # degree units
                         self.dlg.cb_units.clear()
                         self.dlg.cb_units.setEnabled(False)
-                        self.dlg.le_total.setText(str('{:.3f}{}'.format(total_length_proj, self.Distance_Units[l_units])))
+                        self.dlg.le_total.setText(str('{:.6f}{}'.format(total_length_proj, self.Distance_Units[l_units])))
                         
                         
             elif layer.geometryType() == 2:# Polygons
@@ -393,7 +393,7 @@ class MeasureSelectedFeatures:
                         self.dlg.le_total.setText(str('{:.3f}NM2'.format(total_geo_nm)))
                     elif self.dlg.cb_units.currentText() == 'square degrees':
                         total_geo_deg = self.da.convertAreaMeasurement(total_geo_m, QgsUnitTypes.AreaSquareDegrees)
-                        self.dlg.le_total.setText(str('{:.3f}deg2'.format(total_geo_deg)))
+                        self.dlg.le_total.setText(str('{:.6f}deg2'.format(total_geo_deg)))
                     elif self.dlg.cb_units.currentText() == 'square centimeters':
                         total_geo_cm = self.da.convertAreaMeasurement(total_geo_m, QgsUnitTypes.AreaSquareCentimeters)
                         self.dlg.le_total.setText(str('{:.3f}cm2'.format(total_geo_cm)))
@@ -428,7 +428,7 @@ class MeasureSelectedFeatures:
                         self.dlg.cb_units.clear()
                         if self.dlg.cb_units.isEnabled():
                             self.dlg.cb_units.setEnabled(False)
-                        self.dlg.le_total.setText(str('{:.3f}{}2'.format(total_area_proj, self.Distance_Units[l_units])))
+                        self.dlg.le_total.setText(str('{:.6f}{}2'.format(total_area_proj, self.Distance_Units[l_units])))
                         
             if layer.geometryType() in [3, 4]:
                 self.iface.messageBar().pushMessage('Layer has unknown or Null geometry type', duration=2)
